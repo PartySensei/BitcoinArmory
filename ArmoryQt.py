@@ -92,6 +92,7 @@ from qtdialogs.DlgHelpAbout import DlgHelpAbout
 from qtdialogs.MsgBoxCustom import MsgBoxCustom
 from qtdialogs.MsgBoxWithDNAA import MsgBoxWithDNAA
 from qtdialogs.DlgUniversalRestoreSelect import DlgUniversalRestoreSelect
+from qtdialogs.DlgSetupManager import DlgSetupManager
 
 from ui.QtExecuteSignal import TheSignalExecution
 from armorymodels import AllWalletsDispModel, AllWalletsCheckboxDelegate, \
@@ -532,7 +533,7 @@ class ArmoryMainWindow(QtWidgets.QMainWindow):
       #MENUS = enum('File', 'Wallet', 'User', "Tools", "Network")
       currmode = TheSettings.getSettingOrSetDefault('User_Mode', 'Advanced')
       MENUS = enum('File', 'User', 'Tools', 'Addresses', 'Wallets', \
-                                                'MultiSig', 'Help')
+                                                'MultiSig', 'Help', 'Settings')
       self.menu = self.menuBar()
       self.menusList = []
       self.menusList.append( self.menu.addMenu(self.tr('&File')) )
@@ -542,6 +543,7 @@ class ArmoryMainWindow(QtWidgets.QMainWindow):
       self.menusList.append( self.menu.addMenu(self.tr('&Wallets')) )
       self.menusList.append( self.menu.addMenu(self.tr('&MultiSig')) )
       self.menusList.append( self.menu.addMenu(self.tr('&Help')) )
+      self.menusList.append( self.menu.addMenu(self.tr('&Settings')) )
       #self.menusList.append( self.menu.addMenu('&Network') )
 
 
@@ -558,11 +560,15 @@ class ArmoryMainWindow(QtWidgets.QMainWindow):
 
       actExportTx    = self.createAction(self.tr('&Export Transactions...'), exportTx)
       actSettings    = self.createAction(self.tr('&Settings...'), self.openSettings)
+      actSetupManager = self.createAction(self.tr('Setup &Manager...'), self.openSetupManager)
+      actFactoryReset = self.createAction(self.tr('&Factory Reset...'), self.factoryReset)
       actMinimApp    = self.createAction(self.tr('&Minimize Armory'), self.minimizeArmory)
       actExportLog   = self.createAction(self.tr('Export &Log File...'), self.exportLogFile)
       actCloseApp    = self.createAction(self.tr('&Quit Armory'), self.closeForReal)
       self.menusList[MENUS.File].addAction(actExportTx)
       self.menusList[MENUS.File].addAction(actSettings)
+      self.menusList[MENUS.File].addAction(actSetupManager)
+      self.menusList[MENUS.File].addAction(actFactoryReset)
       self.menusList[MENUS.File].addAction(actMinimApp)
       self.menusList[MENUS.File].addAction(actExportLog)
       self.menusList[MENUS.File].addAction(actCloseApp)
@@ -5231,9 +5237,23 @@ class ArmoryMainWindow(QtWidgets.QMainWindow):
    def unregisterProgressCallback(self, id):
       del self.progressCallbacks[id]
 
+   ####################################################
+   def openSetupManager(self):
+      LOGDEBUG('openSetupManager')
+      dlgSetupManager = DlgSetupManager(self, self)
+      dlgSetupManager.exec_()
+
 ############################################
 
 if 1:
+   # Create main window first
+   armoryMainWindow = ArmoryMainWindow()
+   
+   # Show welcome screen and setup manager
+   if DlgSetupManager.run() != QtWidgets.QDialog.Accepted:
+      # If setup manager was closed or rejected, exit the application
+      sys.exit(1)
+
    #setup splash screen
    pixLogo = QtGui.QPixmap('./img/splashlogo.png')
    if USE_TESTNET or USE_REGTEST:
@@ -5268,5 +5288,6 @@ if 1:
    armoryMainWindow.show()
 
    SPLASH.finish(armoryMainWindow)
+
    QAPP.setQuitOnLastWindowClosed(True)
    os._exit(QAPP.exec_())
